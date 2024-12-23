@@ -1,27 +1,66 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
-name: Go
+name: Build and Release
 
 on:
   push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+    tags:
+      - 'v*' # Ce workflow sera déclenché uniquement lors d'un push d'un tag commençant par "v"
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
 
-    - name: Set up Go
+    steps:
+    # Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Setup Go environment
+    - name: Setup Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.23'
-    - name: Deps
-      run: go mod tidy
+        go-version: '1.21'
 
-    - name: Build
-      run: go build -v -o xpdemon-deploy ./main.go
+    # Build the binary
+    - name: Build binary
+      run: |
+        go build -o xpdemon-deploy main.go
+
+    # Archive the binary
+    - name: Create archive
+      run: |
+        mkdir -p release
+        mv xpdemon-deploy release/
+        cd release
+        zip xpdemon-deploy.zip xpdemon-deploy
+
+    # Upload the build artifact
+    - name: Upload Release Asset
+      uses: actions/upload-artifact@v3
+      with:
+        name: xpdemon-deploy-binary
+        path: release/xpdemon-deploy.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # Download the artifact created in the build step
+    - name: Download artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: xpdemon-deploy-binary
+
+    # Create a new GitHub release
+    - name: Create GitHub Release
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: xpdemon-deploy.zip
+        tag: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        body: |
+          Binary built for version ${{ github.ref_name }}.
