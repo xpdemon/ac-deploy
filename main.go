@@ -11,37 +11,40 @@ import (
 )
 
 func main() {
-	// Charger la configuration
+	// Load the configuration
 	err := config.LoadConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Erreur lors du chargement de la config : %v\n", err)
-		// Continuer avec une config vide ou quitter, selon votre logique
+		_, err := fmt.Fprintf(os.Stderr, "Error loading config: %v\n", err)
+		if err != nil {
+			return
+		}
+		// Continue with an empty config or exit, depending on your logic
 	}
 
-	// Vérification Docker
+	// Docker verification
 	err = cmd.CheckDockerInstalled()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Vérification Docker échouée : %v\n", err)
+		fmt.Fprintf(os.Stderr, "Docker verification failed: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Commande racine
+	// Root command
 	rootCmd := &cobra.Command{
 		Use:   "xpdemon-deploy",
-		Short: "CLI de déploiement Docker (exemple avancé)",
-		Long:  "Un exemple de CLI Go avec Cobra pour builder et déployer des images Docker Compose sur différents contextes et registries.",
+		Short: "Docker Deployment CLI (advanced example)",
+		Long:  "An example Go CLI with Cobra to build and deploy Docker Compose images across different contexts and registries.",
 	}
 
-	// Ajout des sous-commandes
+	// Add sub-commands
 	rootCmd.AddCommand(
 		cmd.AddContextCmd,
-		cmd.ListContextsCmd, // <-- On ajoute ici
+		cmd.ListContextsCmd, // <-- Added here
 		cmd.AddRegistryCmd,
 		cmd.LoginRegistryCmd,
 		cmd.RunFlowCmd,
 	)
 
-	// Exécution
+	// Execute
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)

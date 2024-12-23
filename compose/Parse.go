@@ -12,7 +12,7 @@ type ComposeFile struct {
 	} `yaml:"services"`
 }
 
-// ParseComposeFile lit un docker-compose.yml et retourne la liste des images
+// ParseComposeFile reads a docker-compose.yml and returns the list of images
 func ParseComposeFile(path string) ([]string, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {

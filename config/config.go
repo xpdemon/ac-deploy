@@ -20,10 +20,10 @@ type DockerContext struct {
 	// ...
 }
 
-// Instance de configuration en mémoire
+// In-memory configuration instance
 var Cfg AppConfig
 
-// getConfigPath retourne le chemin ~/.xpdemon-deploy/config.json
+// getConfigPath returns the path ~/.xpdemon-deploy/config.json
 func getConfigPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -37,13 +37,13 @@ func getConfigPath() (string, error) {
 	return filepath.Join(cfgDir, "config.json"), nil
 }
 
-// LoadConfig charge la configuration depuis le fichier ~/.xpdemon-deploy/config.json
+// LoadConfig loads the configuration from the file ~/.xpdemon-deploy/config.json
 func LoadConfig() error {
 	path, err := getConfigPath()
 	if err != nil {
 		return err
 	}
-	// Si le fichier n'existe pas, on initialise une config vide
+	// If the file does not exist, initialize an empty config
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		Cfg = AppConfig{
 			DockerContexts:   []DockerContext{},
@@ -63,7 +63,7 @@ func LoadConfig() error {
 	return nil
 }
 
-// SaveConfig sauvegarde la configuration dans le fichier ~/.xpdemon-deploy/config.json
+// SaveConfig saves the configuration to the file ~/.xpdemon-deploy/config.json
 func SaveConfig() error {
 	path, err := getConfigPath()
 	if err != nil {
@@ -78,6 +78,6 @@ func SaveConfig() error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Configuration sauvegardée dans", path)
+	fmt.Println("Configuration saved to", path)
 	return nil
 }

@@ -4,12 +4,45 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/xpdemon/ac-deploy/config"
 	"os"
 	"os/exec"
 	"strings"
 )
 
-// readLine lit une ligne depuis l'entrée standard
+// getLocalDockerContexts returns the list of Docker contexts
+// actually present on the machine (via docker CLI).
+func getLocalDockerContexts() ([]config.DockerContext, error) {
+	// Format for listing: choose a "parsable" format.
+	// For example: name|description|dockerEndpoint
+	formatString := "{{.Name}}|{{.Description}}|{{.DockerEndpoint}}"
+
+	cmd := exec.Command("docker", "context", "ls", "--format", formatString)
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("Error executing docker context ls: %w", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	var result []config.DockerContext
+	for _, line := range lines {
+		parts := strings.Split(line, "|")
+		if len(parts) < 3 {
+			// Ignore any malformed lines
+			continue
+		}
+		ctx := config.DockerContext{
+			Name:        parts[0],
+			Description: parts[1],
+			Host:        parts[2],
+		}
+		result = append(result, ctx)
+	}
+
+	return result, nil
+}
+
+// readLine reads a line from standard input
 func readLine(prompt string) string {
 	fmt.Print(prompt)
 	reader := bufio.NewReader(os.Stdin)
@@ -17,26 +50,29 @@ func readLine(prompt string) string {
 	return strings.TrimSpace(input)
 }
 
-// strToInt convertit une string en int (simplement)
+// strToInt converts a string to an int (simply)
 func strToInt(s string) int {
 	var i int
-	fmt.Sscanf(s, "%d", &i)
+	_, err := fmt.Sscanf(s, "%d", &i)
+	if err != nil {
+		return 0
+	}
 	return i
 }
 
-// runCommand exécute une commande système et redirige stdout/stderr
+// runCommand executes a system command and redirects stdout/stderr
 func runCommand(name string, args ...string) error {
-	fmt.Printf("=> Commande : %s %s\n", name, strings.Join(args, " "))
+	fmt.Printf("=> Command: %s %s\n", name, strings.Join(args, " "))
 	cmd := exec.Command(name, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
 
-// dockerLogin exécute un `docker login <registry>` interactif (mode mot de passe)
+// dockerLogin executes an interactive `docker login <registry>` (password mode)
 func dockerLogin(registry string) error {
-	user := readLine("Nom d'utilisateur : ")
-	pass := readLine("Mot de passe/Token : ")
+	user := readLine("Username: ")
+	pass := readLine("Password/Token: ")
 	cmd := exec.Command("docker", "login", registry, "--username", user, "--password-stdin")
 	cmd.Stdin = strings.NewReader(pass)
 	cmd.Stdout = os.Stdout
@@ -44,23 +80,23 @@ func dockerLogin(registry string) error {
 	return cmd.Run()
 }
 
-// CheckDockerInstalled vérifie que la commande docker (et docker compose) sont dispo
+// CheckDockerInstalled verifies that the docker command (and docker compose) are available
 func CheckDockerInstalled() error {
-	// Vérifier "docker version"
+	// Check "docker version"
 	_, err := exec.LookPath("docker")
 	if err != nil {
-		return errors.New("docker n'est pas installé ou introuvable dans le PATH")
+		return errors.New("docker is not installed or not found in PATH")
 	}
 
-	// Vérifier "docker compose" (sous-commande V2)
-	// Essayons d'appeler "docker compose version"
+	// Check "docker compose" (V2 subcommand)
+	// Let's try calling "docker compose version"
 	out, err := exec.Command("docker", "compose", "version").CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("La commande 'docker compose' a échoué : %v", err)
+		return fmt.Errorf("The 'docker compose' command failed: %v", err)
 	}
 
 	if !strings.Contains(string(out), "Docker Compose") {
-		return errors.New("'docker compose' semble indisponible ou incompatible")
+		return errors.New("'docker compose' seems unavailable or incompatible")
 	}
 
 	return nil
