@@ -8,52 +8,52 @@ import (
 	"github.com/xpdemon/ac-deploy/config"
 )
 
-// Ajouter une registry
+// Add a Docker registry
 var AddRegistryCmd = &cobra.Command{
 	Use:   "add-registry",
-	Short: "Ajoute une registry Docker à la liste",
+	Short: "Add a Docker registry to the list",
 	Run: func(cmd *cobra.Command, args []string) {
-		registry := readLine("URL/Host de la registry (ex: docker.io/monuser) : ")
+		registry := readLine("URL/Host of the registry (e.g., docker.io/myuser): ")
 		config.Cfg.DockerRegistries = append(config.Cfg.DockerRegistries, registry)
-		// Sauvegarder
+		// Save
 		err := config.SaveConfig()
 		if err != nil {
-			fmt.Printf("Erreur lors de la sauvegarde : %v\n", err)
+			fmt.Printf("Error during save: %v\n", err)
 		} else {
-			fmt.Printf("Registry '%s' ajoutée.\n", registry)
+			fmt.Printf("Registry '%s' added.\n", registry)
 		}
 	},
 }
 
-// Se logguer à la registry
+// Log in to a Docker registry
 var LoginRegistryCmd = &cobra.Command{
 	Use:   "login-registry",
-	Short: "Se connecter à une registry existante",
+	Short: "Log in to an existing Docker registry",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(config.Cfg.DockerRegistries) == 0 {
-			fmt.Println("Aucune registry n'est enregistrée. Utilisez `xpdemon-deploy add-registry`.")
+			fmt.Println("No registries are registered. Use `xpdemon-deploy add-registry`.")
 			return
 		}
 
-		// Affiche les registries disponibles
-		fmt.Println("Registries disponibles :")
+		// Display available registries
+		fmt.Println("Available registries:")
 		for i, r := range config.Cfg.DockerRegistries {
 			fmt.Printf("  [%d] %s\n", i, r)
 		}
 
-		idx := readLine("Choisissez l'index de la registry à laquelle se connecter : ")
+		idx := readLine("Choose the index of the registry to log in to: ")
 		selectedIndex := strToInt(idx)
 		if selectedIndex < 0 || selectedIndex >= len(config.Cfg.DockerRegistries) {
-			fmt.Println("Index invalide.")
+			fmt.Println("Invalid index.")
 			return
 		}
 
 		registry := config.Cfg.DockerRegistries[selectedIndex]
 		err := dockerLogin(registry)
 		if err != nil {
-			fmt.Printf("Erreur lors du login à '%s' : %v\n", registry, err)
+			fmt.Printf("Error logging in to '%s': %v\n", registry, err)
 			return
 		}
-		fmt.Printf("Connecté à la registry : %s\n", registry)
+		fmt.Printf("Logged in to registry: %s\n", registry)
 	},
 }
